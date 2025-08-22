@@ -1,6 +1,7 @@
 import streamlit as st
 from PIL import Image
 import os
+import random
 
 # --------------------------
 # 페이지 설정
@@ -68,29 +69,41 @@ procedure_images = {
 }
 
 # --------------------------
-# 퀴즈 데이터
+# 퀴즈 데이터 (5문제, 선택지 5개)
 # --------------------------
 quiz_data = [
     {
         "question": "화상 응급처치 시 가장 먼저 해야 할 일은?",
-        "options": ["연고 바르기", "차가운 물로 식히기", "물집 터뜨리기"],
+        "options": ["연고 바르기", "차가운 물로 식히기", "물집 터뜨리기", "붕대 감기", "진통제 투여"],
         "answer": "차가운 물로 식히기"
     },
     {
         "question": "성인 기도폐쇄 시 시행하는 방법은?",
-        "options": ["등 두드리기", "하임리히법", "가슴압박"],
+        "options": ["등 두드리기", "하임리히법", "가슴압박", "물 먹이기", "호흡 유도"],
         "answer": "하임리히법"
     },
     {
         "question": "심정지 환자에게 가슴 압박은 분당 몇 회가 적절한가?",
-        "options": ["40~60회", "80~100회", "100~120회"],
+        "options": ["40~60회", "80~100회", "100~120회", "140~160회", "60~80회"],
         "answer": "100~120회"
+    },
+    {
+        "question": "출혈이 심할 때 가장 먼저 해야 하는 조치는?",
+        "options": ["압박", "물로 세척", "기침 유도", "휴식", "연고 바르기"],
+        "answer": "압박"
+    },
+    {
+        "question": "골절 환자를 발견했을 때 가장 먼저 해야 하는 조치는?",
+        "options": ["움직이지 않게 고정", "심폐소생술", "연고 바르기", "출혈 확인", "호흡 확인"],
+        "answer": "움직이지 않게 고정"
     }
 ]
 
 # --------------------------
 # 세션 상태 초기화
 # --------------------------
+if "quiz_list" not in st.session_state:
+    st.session_state.quiz_list = random.sample(quiz_data, len(quiz_data))
 if "q_num" not in st.session_state:
     st.session_state.q_num = 0
 if "score" not in st.session_state:
@@ -99,8 +112,6 @@ if "completed" not in st.session_state:
     st.session_state.completed = False
 if "selected_option" not in st.session_state:
     st.session_state.selected_option = None
-if "answered" not in st.session_state:
-    st.session_state.answered = False
 
 # --------------------------
 # 응급처치 가이드 화면
@@ -109,7 +120,6 @@ if menu == "응급처치 가이드":
     st.header("📝 상황별 응급처치 단계")
     situation = st.selectbox("상황을 선택하세요", list(procedures.keys()))
     
-    # 그림 표시
     img = load_image(procedure_images.get(situation, ""))
     if img:
         st.image(img, use_column_width=True)
@@ -125,7 +135,7 @@ elif menu == "퀴즈 모드":
     st.header("❓ 응급처치 퀴즈")
 
     if not st.session_state.completed:
-        q = quiz_data[st.session_state.q_num]
+        q = st.session_state.quiz_list[st.session_state.q_num]
         st.subheader(f"문제 {st.session_state.q_num + 1}: {q['question']}")
 
         # 선택지 유지
@@ -134,32 +144,28 @@ elif menu == "퀴즈 모드":
             index=q["options"].index(st.session_state.selected_option) if st.session_state.selected_option else 0
         )
 
-        # 정답 확인
+        # 정답 확인 + 바로 다음 문제
         if st.button("정답 확인"):
-            st.session_state.answered = True
             if st.session_state.selected_option == q["answer"]:
                 st.success("✅ 정답입니다!")
                 st.session_state.score += 1
             else:
                 st.error(f"❌ 오답입니다. 정답은 '{q['answer']}' 입니다.")
 
-        # 다음 문제
-        if st.session_state.answered:
-            if st.button("다음 문제"):
-                st.session_state.q_num += 1
-                st.session_state.selected_option = None
-                st.session_state.answered = False
-                if st.session_state.q_num >= len(quiz_data):
-                    st.session_state.completed = True
+            # 다음 문제로 바로 넘어가기
+            st.session_state.q_num += 1
+            st.session_state.selected_option = None
+            if st.session_state.q_num >= len(st.session_state.quiz_list):
+                st.session_state.completed = True
 
     else:
-        st.info(f"퀴즈 종료! 총 {len(quiz_data)}문제 중 {st.session_state.score}개 맞았습니다.")
+        st.info(f"퀴즈 종료! 총 {len(st.session_state.quiz_list)}문제 중 {st.session_state.score}개 맞았습니다.")
         if st.button("다시 시작"):
+            st.session_state.quiz_list = random.sample(quiz_data, len(quiz_data))
             st.session_state.q_num = 0
             st.session_state.score = 0
             st.session_state.completed = False
             st.session_state.selected_option = None
-            st.session_state.answered = False
 
 
 
