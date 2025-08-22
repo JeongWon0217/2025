@@ -2,8 +2,10 @@ import streamlit as st
 from PIL import Image
 import os
 
+# --------------------------
+# 페이지 설정
+# --------------------------
 st.set_page_config(page_title="응급처치 학습 앱", page_icon="🩺", layout="centered")
-
 st.title("🚑 응급처치 학습 앱")
 st.markdown("응급 상황 대처법을 배우고, 그림과 퀴즈로 학습 효과를 확인하세요!")
 
@@ -13,7 +15,7 @@ st.markdown("응급 상황 대처법을 배우고, 그림과 퀴즈로 학습 �
 menu = st.sidebar.radio("메뉴 선택", ["응급처치 가이드", "퀴즈 모드"])
 
 # --------------------------
-# 그림 불러오기 (예시: images 폴더)
+# 그림 불러오기 함수
 # --------------------------
 def load_image(file_name):
     path = os.path.join("images", file_name)
@@ -87,12 +89,27 @@ quiz_data = [
 ]
 
 # --------------------------
-# 응급처치 가이드
+# 세션 상태 초기화
+# --------------------------
+if "q_num" not in st.session_state:
+    st.session_state.q_num = 0
+if "score" not in st.session_state:
+    st.session_state.score = 0
+if "completed" not in st.session_state:
+    st.session_state.completed = False
+if "selected_option" not in st.session_state:
+    st.session_state.selected_option = None
+if "answered" not in st.session_state:
+    st.session_state.answered = False
+
+# --------------------------
+# 응급처치 가이드 화면
 # --------------------------
 if menu == "응급처치 가이드":
     st.header("📝 상황별 응급처치 단계")
     situation = st.selectbox("상황을 선택하세요", list(procedures.keys()))
     
+    # 그림 표시
     img = load_image(procedure_images.get(situation, ""))
     if img:
         st.image(img, use_column_width=True)
@@ -102,34 +119,38 @@ if menu == "응급처치 가이드":
         st.write(f"{i}. {step}")
 
 # --------------------------
-# 퀴즈 모드
+# 퀴즈 모드 화면
 # --------------------------
 elif menu == "퀴즈 모드":
     st.header("❓ 응급처치 퀴즈")
 
-    # 세션 상태 초기화
-    if "q_num" not in st.session_state:
-        st.session_state.q_num = 0
-        st.session_state.score = 0
-        st.session_state.completed = False
-
     if not st.session_state.completed:
         q = quiz_data[st.session_state.q_num]
         st.subheader(f"문제 {st.session_state.q_num + 1}: {q['question']}")
-        user_answer = st.radio("정답을 선택하세요", q["options"], key=f"q_{st.session_state.q_num}")
 
+        # 선택지 유지
+        st.session_state.selected_option = st.radio(
+            "정답을 선택하세요", q["options"],
+            index=q["options"].index(st.session_state.selected_option) if st.session_state.selected_option else 0
+        )
+
+        # 정답 확인
         if st.button("정답 확인"):
-            if user_answer == q["answer"]:
+            st.session_state.answered = True
+            if st.session_state.selected_option == q["answer"]:
                 st.success("✅ 정답입니다!")
                 st.session_state.score += 1
             else:
                 st.error(f"❌ 오답입니다. 정답은 '{q['answer']}' 입니다.")
 
-            # 다음 문제
-            if st.session_state.q_num < len(quiz_data) - 1:
+        # 다음 문제
+        if st.session_state.answered:
+            if st.button("다음 문제"):
                 st.session_state.q_num += 1
-            else:
-                st.session_state.completed = True
+                st.session_state.selected_option = None
+                st.session_state.answered = False
+                if st.session_state.q_num >= len(quiz_data):
+                    st.session_state.completed = True
 
     else:
         st.info(f"퀴즈 종료! 총 {len(quiz_data)}문제 중 {st.session_state.score}개 맞았습니다.")
@@ -137,5 +158,8 @@ elif menu == "퀴즈 모드":
             st.session_state.q_num = 0
             st.session_state.score = 0
             st.session_state.completed = False
+            st.session_state.selected_option = None
+            st.session_state.answered = False
+
 
 
