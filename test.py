@@ -1,153 +1,141 @@
 import streamlit as st
-import random
+from PIL import Image
+import os
 
-# 페이지 기본 설정
-st.set_page_config(page_title="응급처치 학습 앱", page_icon="🚑", layout="centered")
+st.set_page_config(page_title="응급처치 학습 앱", page_icon="🩺", layout="centered")
 
 st.title("🚑 응급처치 학습 앱")
-st.markdown("응급 상황 대처법을 학습하고 퀴즈로 실력을 점검하세요!")
+st.markdown("응급 상황 대처법을 배우고, 그림과 퀴즈로 학습 효과를 확인하세요!")
 
-# =============================
-# 응급처치 절차 데이터
-# =============================
-first_aid_guides = {
+# --------------------------
+# 메뉴 선택
+# --------------------------
+menu = st.sidebar.radio("메뉴 선택", ["응급처치 가이드", "퀴즈 모드"])
+
+# --------------------------
+# 그림 불러오기 (예시: images 폴더)
+# --------------------------
+def load_image(file_name):
+    path = os.path.join("images", file_name)
+    if os.path.exists(path):
+        return Image.open(path)
+    else:
+        return None
+
+# --------------------------
+# 응급처치 가이드 데이터
+# --------------------------
+procedures = {
     "화상": [
-        "🔥 즉시 뜨거운 원인(불, 뜨거운 물, 화학물질 등)에서 멀리한다.",
-        "💧 화상 부위를 10~20분간 흐르는 시원한 물로 식힌다.",
-        "❌ 얼음, 치약, 기름, 된장 등은 바르지 않는다.",
-        "🩹 물집은 터뜨리지 말고 멸균 거즈로 가볍게 덮는다.",
-        "📞 얼굴, 손, 생식기, 넓은 부위 화상은 즉시 119 신고."
+        "즉시 화상 부위를 차가운 흐르는 물에 10~15분 이상 식힌다.",
+        "물집은 터뜨리지 않는다.",
+        "깨끗한 거즈로 부위를 덮는다.",
+        "연고, 기름, 소독약은 바르지 않는다.",
+        "심한 화상은 119에 신고한다."
     ],
     "기도폐쇄(성인)": [
-        "🙍 환자가 기침할 수 있으면 격려하여 계속 기침하게 한다.",
-        "🙅‍♂️ 심한 기도폐쇄 시 즉시 하임리히법 시행.",
-        "🤲 환자 뒤에 서서 두 팔로 감싸고, 배꼽 위·명치 아래 부위를 주먹으로 강하게 밀어 올린다.",
-        "🔁 기도가 뚫릴 때까지 반복.",
-        "📞 의식 소실 시 즉시 119 신고 후 심폐소생술 시행."
-    ],
-    "기도폐쇄(영아)": [
-        "👶 영아를 팔 위에 엎드려 얼굴은 아래로 향하게 한다.",
-        "✋ 손바닥으로 어깨 사이를 5회 강하게 두드린다.",
-        "⬇️ 효과 없으면 가슴 중앙을 2손가락으로 5회 압박한다.",
-        "🔁 기도가 뚫릴 때까지 반복.",
-        "📞 즉시 119 신고."
+        "기침을 유도한다.",
+        "기침 불가 시 하임리히법(복부 밀어 올리기) 시행",
+        "의식 없으면 심폐소생술(CPR) 진행"
     ],
     "심정지": [
-        "✅ 반응과 호흡 확인 (10초 이내).",
-        "📞 119 신고 및 AED 요청.",
-        "🙌 호흡과 맥박이 없으면 즉시 가슴압박 시작.",
-        "💪 가슴압박: 분당 100~120회, 깊이 5~6cm, 30회 시행.",
-        "👄 인공호흡: 2회 시행.",
-        "🔁 가슴압박 30회 : 인공호흡 2회 반복.",
-        "⚡ AED 도착 시 지시에 따라 전기충격 및 심폐소생술 계속."
+        "반응과 호흡 확인",
+        "즉시 119 신고 및 AED 요청",
+        "가슴 압박 30회 + 인공호흡 2회 반복 (30:2 비율)",
+        "AED 도착 시 즉시 사용"
     ],
     "출혈": [
-        "🩸 출혈 부위를 직접 압박한다.",
-        "🙌 지혈될 때까지 압박 유지.",
-        "🩹 거즈나 천이 젖어도 제거하지 않고 위에 덧댄다.",
-        "🦵 사지 출혈일 경우 심장보다 높게 올려준다.",
-        "📞 지혈되지 않으면 즉시 119 신고."
+        "출혈 부위를 압박한다",
+        "심하면 지혈대 사용",
+        "환자를 안정시키고 병원으로 이송"
     ],
     "골절": [
-        "🦴 환자를 움직이지 않도록 한다.",
-        "👀 돌출된 뼈는 억지로 밀어 넣지 않는다.",
-        "📏 부목 등으로 골절 부위를 고정한다.",
-        "🧊 냉찜질하여 부종 완화.",
-        "📞 즉시 119 신고 및 병원 이송."
+        "부러진 부위를 움직이지 않게 고정",
+        "부목 등으로 관절 위아래까지 고정",
+        "출혈이 있으면 지혈 우선",
+        "병원으로 신속히 이송"
     ]
 }
 
-# =============================
+procedure_images = {
+    "화상": "burn.png",
+    "기도폐쇄(성인)": "heimlich.png",
+    "심정지": "cpr.png",
+    "출혈": "bleeding.png",
+    "골절": "fracture.png"
+}
+
+# --------------------------
 # 퀴즈 데이터
-# =============================
-quiz_questions = [
+# --------------------------
+quiz_data = [
     {
-        "question": "화상 응급처치로 옳은 것은?",
-        "options": [
-            "얼음을 대어 빠르게 식힌다.",
-            "흐르는 시원한 물에 10~20분간 식힌다.",
-            "치약이나 된장을 바른다.",
-            "물집은 바로 터뜨린다."
-        ],
-        "answer": "흐르는 시원한 물에 10~20분간 식힌다."
+        "question": "화상 응급처치 시 가장 먼저 해야 할 일은?",
+        "options": ["연고 바르기", "차가운 물로 식히기", "물집 터뜨리기"],
+        "answer": "차가운 물로 식히기"
     },
     {
-        "question": "성인 기도폐쇄 시 가장 먼저 해야 할 행동은?",
-        "options": [
-            "하임리히법 즉시 시행",
-            "119에 신고",
-            "기침을 유도한다.",
-            "환자를 눕힌다."
-        ],
-        "answer": "기침을 유도한다."
+        "question": "성인 기도폐쇄 시 시행하는 방법은?",
+        "options": ["등 두드리기", "하임리히법", "가슴압박"],
+        "answer": "하임리히법"
     },
     {
-        "question": "심정지 환자에게 가슴압박 깊이는 성인 기준 몇 cm인가?",
-        "options": [
-            "약 2cm", "약 3~4cm", "약 5~6cm", "10cm 이상"
-        ],
-        "answer": "약 5~6cm"
-    },
-    {
-        "question": "출혈 부위가 심하게 피에 젖으면 어떻게 해야 할까?",
-        "options": [
-            "거즈를 제거하고 새로 감싼다.",
-            "젖은 거즈 위에 새 거즈를 덧댄다.",
-            "압박을 멈추고 냉찜질한다.",
-            "즉시 상처를 씻는다."
-        ],
-        "answer": "젖은 거즈 위에 새 거즈를 덧댄다."
-    },
-    {
-        "question": "심정지 환자에게 권장되는 가슴압박 속도는?",
-        "options": [
-            "분당 40~60회", "분당 80~100회", "분당 100~120회", "분당 150회 이상"
-        ],
-        "answer": "분당 100~120회"
+        "question": "심정지 환자에게 가슴 압박은 분당 몇 회가 적절한가?",
+        "options": ["40~60회", "80~100회", "100~120회"],
+        "answer": "100~120회"
     }
 ]
 
-# =============================
-# 탭 메뉴: 가이드 / 퀴즈
-# =============================
-tab1, tab2 = st.tabs(["📘 응급처치 가이드", "📝 퀴즈 모드"])
+# --------------------------
+# 응급처치 가이드
+# --------------------------
+if menu == "응급처치 가이드":
+    st.header("📝 상황별 응급처치 단계")
+    situation = st.selectbox("상황을 선택하세요", list(procedures.keys()))
+    
+    img = load_image(procedure_images.get(situation, ""))
+    if img:
+        st.image(img, use_column_width=True)
+    
+    st.subheader(f"🚨 {situation} 응급처치 절차")
+    for i, step in enumerate(procedures[situation], 1):
+        st.write(f"{i}. {step}")
 
-with tab1:
-    situation = st.selectbox(
-        "응급 상황을 선택하세요",
-        ["-- 선택 --"] + list(first_aid_guides.keys())
-    )
+# --------------------------
+# 퀴즈 모드
+# --------------------------
+elif menu == "퀴즈 모드":
+    st.header("❓ 응급처치 퀴즈")
 
-    if situation != "-- 선택 --":
-        st.subheader(f"👉 {situation} 응급처치 방법")
-        steps = first_aid_guides[situation]
-        for i, step in enumerate(steps, 1):
-            st.write(f"{i}. {step}")
-        st.success("⚠️ 응급처치는 의료진의 진료를 대체할 수 없으며, 반드시 119에 신고해야 합니다.")
+    # 세션 상태 초기화
+    if "q_num" not in st.session_state:
+        st.session_state.q_num = 0
+        st.session_state.score = 0
+        st.session_state.completed = False
 
-with tab2:
-    st.subheader("📝 응급처치 퀴즈")
-    num_questions = 5  # 출제할 문제 수
-    selected_questions = random.sample(quiz_questions, num_questions)
+    if not st.session_state.completed:
+        q = quiz_data[st.session_state.q_num]
+        st.subheader(f"문제 {st.session_state.q_num + 1}: {q['question']}")
+        user_answer = st.radio("정답을 선택하세요", q["options"], key=f"q_{st.session_state.q_num}")
 
-    user_answers = {}
-    for i, q in enumerate(selected_questions, 1):
-        st.write(f"**Q{i}. {q['question']}**")
-        user_answers[i] = st.radio(
-            f"문제 {i} 보기", q["options"], index=None, key=f"q{i}"
-        )
-        st.markdown("---")
+        if st.button("정답 확인"):
+            if user_answer == q["answer"]:
+                st.success("✅ 정답입니다!")
+                st.session_state.score += 1
+            else:
+                st.error(f"❌ 오답입니다. 정답은 '{q['answer']}' 입니다.")
 
-    if st.button("제출하기"):
-        score = 0
-        for i, q in enumerate(selected_questions, 1):
-            if user_answers[i] == q["answer"]:
-                score += 1
-        st.subheader(f"📊 결과: {score} / {num_questions} 점")
-        if score == num_questions:
-            st.success("🎉 완벽합니다! 응급처치 지식을 잘 알고 계시네요.")
-        elif score >= num_questions // 2:
-            st.info("😊 잘하셨어요. 조금만 더 보완하면 됩니다.")
-        else:
-            st.error("⚠️ 학습이 더 필요합니다. 응급처치 가이드를 다시 확인하세요!")
+            # 다음 문제
+            if st.session_state.q_num < len(quiz_data) - 1:
+                st.session_state.q_num += 1
+            else:
+                st.session_state.completed = True
+
+    else:
+        st.info(f"퀴즈 종료! 총 {len(quiz_data)}문제 중 {st.session_state.score}개 맞았습니다.")
+        if st.button("다시 시작"):
+            st.session_state.q_num = 0
+            st.session_state.score = 0
+            st.session_state.completed = False
+
 
