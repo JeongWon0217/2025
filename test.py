@@ -112,6 +112,8 @@ if "completed" not in st.session_state:
     st.session_state.completed = False
 if "selected_option" not in st.session_state:
     st.session_state.selected_option = None
+if "answered" not in st.session_state:
+    st.session_state.answered = False
 
 # --------------------------
 # 응급처치 가이드 화면
@@ -144,19 +146,24 @@ elif menu == "퀴즈 모드":
             index=q["options"].index(st.session_state.selected_option) if st.session_state.selected_option else 0
         )
 
-        # 정답 확인 + 바로 다음 문제
-        if st.button("정답 확인"):
-            if st.session_state.selected_option == q["answer"]:
-                st.success("✅ 정답입니다!")
-                st.session_state.score += 1
-            else:
-                st.error(f"❌ 오답입니다. 정답은 '{q['answer']}' 입니다.")
+        # 정답 확인
+        if not st.session_state.answered:
+            if st.button("정답 확인"):
+                st.session_state.answered = True
+                if st.session_state.selected_option == q["answer"]:
+                    st.success("✅ 정답입니다!")
+                    st.session_state.score += 1
+                else:
+                    st.error(f"❌ 오답입니다. 정답은 '{q['answer']}' 입니다.")
 
-            # 다음 문제로 바로 넘어가기
-            st.session_state.q_num += 1
-            st.session_state.selected_option = None
-            if st.session_state.q_num >= len(st.session_state.quiz_list):
-                st.session_state.completed = True
+        # 다음 문제 버튼
+        if st.session_state.answered:
+            if st.button("다음 문제"):
+                st.session_state.q_num += 1
+                st.session_state.selected_option = None
+                st.session_state.answered = False
+                if st.session_state.q_num >= len(st.session_state.quiz_list):
+                    st.session_state.completed = True
 
     else:
         st.info(f"퀴즈 종료! 총 {len(st.session_state.quiz_list)}문제 중 {st.session_state.score}개 맞았습니다.")
@@ -166,6 +173,7 @@ elif menu == "퀴즈 모드":
             st.session_state.score = 0
             st.session_state.completed = False
             st.session_state.selected_option = None
+            st.session_state.answered = False
 
 
 
