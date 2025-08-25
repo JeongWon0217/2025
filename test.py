@@ -43,14 +43,13 @@ quiz_data = [
 ]
 
 # -------------------------------
-# 메인 제목 + 탭 메뉴
+# 앱 제목 + 탭 메뉴
 # -------------------------------
 st.title("⛑️ 응급처치 교육 앱")
-
 tab1, tab2 = st.tabs(["📘 응급처치 방법", "📝 퀴즈 풀기"])
 
 # -------------------------------
-# 응급처치 설명 탭
+# 탭1: 응급처치 설명
 # -------------------------------
 with tab1:
     st.header("📘 응급처치 방법")
@@ -59,45 +58,46 @@ with tab1:
     st.write(first_aid_info[choice])
 
 # -------------------------------
-# 퀴즈 탭
+# 탭2: 퀴즈
 # -------------------------------
 with tab2:
     st.header("📝 응급처치 퀴즈")
 
-    # 세션 초기화 (처음 들어올 때만 실행)
+    # 세션 초기화
     if "quiz_list" not in st.session_state:
-        st.session_state.quiz_list = random.sample(quiz_data, len(quiz_data))  # 랜덤 섞기
+        st.session_state.quiz_list = random.sample(quiz_data, len(quiz_data))
         st.session_state.index = 0
         st.session_state.answered = False
         st.session_state.selected = None
-        st.session_state.score = 0  # 점수 추가
+        st.session_state.score = 0
 
-    # 현재 문제 불러오기
+    # 현재 문제
     if st.session_state.index < len(st.session_state.quiz_list):
         quiz = st.session_state.quiz_list[st.session_state.index]
-
         st.write(f"**❓ Q{st.session_state.index+1}. {quiz['question']}**")
         st.session_state.selected = st.radio("👉 답을 선택하세요:", quiz["options"])
 
-        if st.button("✅ 정답 확인"):
+        if st.button("✅ 정답 확인") and not st.session_state.answered:
             st.session_state.answered = True
-
-        if st.session_state.answered:
             if st.session_state.selected == quiz["answer"]:
                 st.success("🎉 정답입니다! 👍")
                 st.session_state.score += 1
             else:
                 st.error(f"❌ 오답입니다. 정답은 **{quiz['answer']}** 입니다.")
 
-            if st.button("➡️ 다음 문제"):
-                st.session_state.index += 1
-                st.session_state.answered = False
-                st.session_state.selected = None
+        if st.session_state.answered and st.button("➡️ 다음 문제"):
+            st.session_state.index += 1
+            st.session_state.answered = False
+            st.session_state.selected = None
+
+        # 진행률 표시
+        st.progress((st.session_state.index) / len(st.session_state.quiz_list))
 
     else:
         st.success(f"🥳 모든 문제를 다 풀었습니다! 총 점수: **{st.session_state.score} / {len(st.session_state.quiz_list)}**")
         if st.button("🔄 다시 풀기"):
             st.session_state.clear()
+
 
 
 
