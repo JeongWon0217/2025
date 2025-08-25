@@ -43,60 +43,62 @@ quiz_data = [
 ]
 
 # -------------------------------
-# 사이드바 메뉴
+# 메인 제목 + 탭 메뉴
 # -------------------------------
-st.sidebar.title("⛑️ 응급처치 교육")
-menu = st.sidebar.radio("📌 메뉴 선택", ["🏠 소개", "📘 응급처치 설명", "📝 퀴즈 풀기"])
+st.title("⛑️ 응급처치 교육 앱")
+
+tab1, tab2 = st.tabs(["📘 응급처치 방법", "📝 퀴즈 풀기"])
 
 # -------------------------------
-# 소개 페이지
+# 응급처치 설명 탭
 # -------------------------------
-if menu == "🏠 소개":
-    st.title("⛑️ 응급처치 교육 앱")
-    st.markdown("""
-    🚑 이 앱은 응급상황에서 필요한 **응급처치 방법**을 배우고,  
-    ✍️ 간단한 **퀴즈**를 통해 복습할 수 있도록 제작되었습니다.  
-    """)
-
-# -------------------------------
-# 설명 페이지
-# -------------------------------
-elif menu == "📘 응급처치 설명":
-    st.title("📘 응급처치 설명")
+with tab1:
+    st.header("📘 응급처치 방법")
     choice = st.selectbox("궁금한 응급처치를 선택하세요", list(first_aid_info.keys()))
     st.subheader(choice)
     st.write(first_aid_info[choice])
 
 # -------------------------------
-# 퀴즈 페이지
+# 퀴즈 탭
 # -------------------------------
-elif menu == "📝 퀴즈 풀기":
-    st.title("📝 응급처치 퀴즈")
+with tab2:
+    st.header("📝 응급처치 퀴즈")
 
-    # 랜덤 문제 하나 선택
-    if "quiz" not in st.session_state:
-        st.session_state.quiz = random.choice(quiz_data)
-        st.session_state.selected = None
+    # 세션 초기화 (처음 들어올 때만 실행)
+    if "quiz_list" not in st.session_state:
+        st.session_state.quiz_list = random.sample(quiz_data, len(quiz_data))  # 랜덤 섞기
+        st.session_state.index = 0
         st.session_state.answered = False
+        st.session_state.selected = None
+        st.session_state.score = 0  # 점수 추가
 
-    quiz = st.session_state.quiz
+    # 현재 문제 불러오기
+    if st.session_state.index < len(st.session_state.quiz_list):
+        quiz = st.session_state.quiz_list[st.session_state.index]
 
-    st.write(f"**❓ Q. {quiz['question']}**")
-    st.session_state.selected = st.radio("👉 답을 선택하세요:", quiz["options"])
+        st.write(f"**❓ Q{st.session_state.index+1}. {quiz['question']}**")
+        st.session_state.selected = st.radio("👉 답을 선택하세요:", quiz["options"])
 
-    if st.button("✅ 정답 확인"):
-        st.session_state.answered = True
+        if st.button("✅ 정답 확인"):
+            st.session_state.answered = True
 
-    if st.session_state.answered:
-        if st.session_state.selected == quiz["answer"]:
-            st.success("🎉 정답입니다! 👍")
-        else:
-            st.error(f"❌ 오답입니다. 정답은 **{quiz['answer']}** 입니다.")
+        if st.session_state.answered:
+            if st.session_state.selected == quiz["answer"]:
+                st.success("🎉 정답입니다! 👍")
+                st.session_state.score += 1
+            else:
+                st.error(f"❌ 오답입니다. 정답은 **{quiz['answer']}** 입니다.")
 
-        if st.button("➡️ 다음 문제"):
-            st.session_state.quiz = random.choice(quiz_data)
-            st.session_state.selected = None
-            st.session_state.answered = False
+            if st.button("➡️ 다음 문제"):
+                st.session_state.index += 1
+                st.session_state.answered = False
+                st.session_state.selected = None
+
+    else:
+        st.success(f"🥳 모든 문제를 다 풀었습니다! 총 점수: **{st.session_state.score} / {len(st.session_state.quiz_list)}**")
+        if st.button("🔄 다시 풀기"):
+            st.session_state.clear()
+
 
 
 
