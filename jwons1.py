@@ -1,36 +1,64 @@
 import streamlit as st
+import random
 
-st.set_page_config(page_title="의료 교육 검색", page_icon="🩺", layout="centered")
+st.set_page_config(page_title="🚑 응급처치 학습", layout="centered")
 
-st.title("🔍 신체 기관 & 현상 검색")
-st.markdown("궁금한 신체 부위를 검색해보세요! 😊")
+# --- 세션 상태 초기화 ---
+if "page" not in st.session_state:
+    st.session_state.page = "응급처치 방법"
+if "quiz_index" not in st.session_state:
+    st.session_state.quiz_index = 0
+if "score" not in st.session_state:
+    st.session_state.score = 0
+if "answered" not in st.session_state:
+    st.session_state.answered = False
 
-# 데이터 (신체 기관과 관련된 이모지 & 이미지 업데이트)
-info = {
-    "심장": ("❤️ 심장은 혈액을 온몸으로 보내는 중요한 펌프 역할을 합니다.", 
-            "https://cdn-icons-png.flaticon.com/512/2913/2913464.png"),  # 심장 그림
-    "폐": ("🫁 폐는 산소와 이산화탄소를 교환하는 호흡 기관입니다.", 
-          "https://cdn-icons-png.flaticon.com/512/1995/1995565.png"),  # 폐 그림
-    "뇌": ("🧠 뇌는 신체와 정신 활동을 조절하는 중추 기관입니다.", 
-          "https://cdn-icons-png.flaticon.com/512/1995/1995530.png"),  # 뇌 그림
-    "소화": ("🍏 소화 기관은 음식물을 분해하고 영양분을 흡수합니다.", 
-            "https://cdn-icons-png.flaticon.com/512/1995/1995557.png"),  # 위 그림
-    "혈액순환": ("🩸 혈액순환은 산소와 영양분을 세포에 전달하고 노폐물을 제거합니다.", 
-               "https://cdn-icons-png.flaticon.com/512/616/616408.png"),  # 혈액 관련 그림
-    "간": ("🫀 간은 해독과 영양소 저장 등 다양한 기능을 수행합니다.", 
-           "https://cdn-icons-png.flaticon.com/512/1995/1995528.png"),  # 간 그림
-    "신장": ("🫙 신장은 혈액을 걸러 소변을 생성하며 체내 수분과 전해질을 조절합니다.", 
-            "https://cdn-icons-png.flaticon.com/512/1995/1995537.png"),  # 신장 그림
-}
+# --- 퀴즈 데이터 ---
+quizzes = [
+    {"q": "심폐소생술(CPR) 시 가슴 압박의 깊이는?", "a": ["약 2cm", "약 5cm", "약 10cm"], "correct": 1},
+    {"q": "코피가 날 때 올바른 응급처치는?", "a": ["머리를 뒤로 젖힌다", "머리를 앞으로 숙이고 콧등을 누른다", "찬물로 얼굴을 씻는다"], "correct": 1},
+    {"q": "화상 응급처치 첫 단계는?", "a": ["연고 바르기", "흐르는 차가운 물로 식히기", "붕대로 감싸기"], "correct": 1},
+]
 
-# 검색창
-query = st.text_input("궁금한 신체 기관을 입력하세요 (예: 심장, 뇌) 📝")
+# --- 사이드 메뉴 ---
+st.title("🚨 응급처치 학습 앱")
+menu = st.radio("메뉴를 선택하세요:", ["응급처치 방법", "퀴즈 풀기"], horizontal=True)
 
-if query:
-    if query in info:
-        desc, img = info[query]
-        st.image(img, width=150)
-        st.success(desc)
-    else:
-        st.warning("❗ 해당 기관은 아직 등록되지 않았습니다.") 
+# --- 응급처치 방법 ---
+if menu == "응급처치 방법":
+    st.header("🩹 기본 응급처치 방법")
+    st.write("1. 코피: 머리를 앞으로 숙이고 콧등을 10분간 압박합니다.")
+    st.write("2. 화상: 흐르는 찬물로 10분 이상 식힙니다.")
+    st.write("3. 기도 폐쇄: 하임리히법을 실시합니다.")
+    st.write("4. 심정지: 119 신고 후 심폐소생술(CPR)을 시작합니다.")
+
+# --- 퀴즈 풀기 ---
+elif menu == "퀴즈 풀기":
+    st.header("📝 응급처치 퀴즈")
+
+    # 현재 문제 가져오기
+    quiz = quizzes[st.session_state.quiz_index]
+
+    # 문제 출력
+    st.subheader(quiz["q"])
+    choice = st.radio("정답을 고르세요:", quiz["a"], key=f"choice_{st.session_state.quiz_index}")
+
+    # 정답 확인
+    if st.button("정답 확인"):
+        if not st.session_state.answered:
+            if quiz["a"].index(choice) == quiz["correct"]:
+                st.success("정답입니다! ✅")
+                st.session_state.score += 1
+            else:
+                st.error(f"틀렸습니다 ❌ 정답은 '{quiz['a'][quiz['correct']]}' 입니다.")
+            st.session_state.answered = True
+
+    # 다음 문제
+    if st.session_state.answered:
+        if st.button("다음 문제"):
+            if st.session_state.quiz_index < len(quizzes) - 1:
+                st.session_state.quiz_index += 1
+                st.session_state.answered = False
+            else:
+                st.write(f"🎉 퀴즈 완료! 총 점수: {st.session_state.score}/{len(quizzes)}")
 
